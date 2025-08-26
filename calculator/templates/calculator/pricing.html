@@ -1,4 +1,68 @@
-<!-- templates/calculator/pricing.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+    body { padding: 20px; }
+    label { margin-top: 10px; }
+</style>
+    <meta charset="UTF-8">
+    <title>Project Cost</title>
+</head>
+<body>
+    <div class="container">
+    <h1>Project Cost</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <h3>Material prices (in nok/m or nok/pcs):</h3>
+        <label>Beam 3×8 (nok/m): <input type="number" step="0.01" name="price_3x8" value="0"></label><br>
+        <label>Beam 3×6 (nok/m): <input type="number" step="0.01" name="price_3x6" value="0"></label><br>
+        <label>Beam 6×6 (nok/m): <input type="number" step="0.01" name="price_6x6" value="0"></label><br>
+        <label>Beam 8×8 (nok/m): <input type="number" step="0.01" name="price_8x8" value="0"></label><br>
+        <label>Bolts (nok/m): <input type="number" step="0.01" name="price_bolt" value="0"></label><br>
+        <label>Screws 30 mm (nok/pcs): <input type="number" step="0.01" name="price_screw_30" value="0"></label><br>
+        <label>Screws 40 mm (nok/pcs): <input type="number" step="0.01" name="price_screw_40" value="0"></label><br>
+
+        <h3>Labor cost:</h3>
+        <label>Price per day (in nok): <input type="number" step="1" name="price_day" value="0"></label><br>
+        <label>Number of days: <input type="number" step="1" name="days" value="0"></label><br><br>
+
+        <button type="submit">Calculate cost</button>
+    </form>
+
+    {% if result %}
+        <hr>
+        <h2>Total cost</h2>
+
+        <h3>Materials:</h3>
+        <p>Beam 3×8: {{ result.cost_3x8 }} nok</p>
+        <p>Beam 3×6 (incl. front): {{ result.cost_3x6 }} nok</p>
+        <p>Beam 6×6: {{ result.cost_6x6 }} nok</p>
+        <p>Beam 8×8: {{ result.cost_8x8 }} nok</p>
+        <p>Bolts (per 1 m): {{ result.cost_bolts }} nok</p>
+        <p>Screws 30 mm: {{ result.cost_screws_30 }} nok</p>
+        <p>Screws 40 mm: {{ result.cost_screws_40 }} nok</p>
+
+        <p><strong>Total material cost: {{ result.total_materials }} nok</strong></p>
+
+        <h3>Labor:</h3>
+        <p>{{ result.days }} days × {{ result.price_day }} nok/day = <strong>{{ result.total_work }} nok</strong></p>
+
+        <h2>Total project cost: <strong>{{ result.total_price }} nok</strong></h2>
+    {% endif %}
+</div>
+    <br><a href="/">← Back to calculator</a>
+
+</body>
+</html>
+
+
+<!-- Русский текст и код ниже
+templates/calculator/pricing.html
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -59,3 +123,5 @@
 
 </body>
 </html>
+
+-->

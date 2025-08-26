@@ -1,4 +1,134 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+    body { padding: 20px; }
+    label { margin-top: 10px; }
+</style>
+    <meta charset="UTF-8">
+    <title>Pier Calculator</title>
+</head>
+<body>
+    <div class="container">
+    <h1>Pier Calculator</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <label>Pier length (m):</label><br>
+        <input type="number" step="0.1" name="length" required><br><br>
+
+        <label>Pier width (m):</label><br>
+        <input type="number" step="0.1" name="width" required><br><br>
+
+        <label>Post spacing along length (m, optional):</label><br>
+        <input type="number" step="0.1" name="spacing_length"><br><br>
+
+        <label>Post spacing along width (m, optional):</label><br>
+        <input type="number" step="0.1" name="spacing_width"><br><br>
+
+        <label>Lag spacing (m, optional):</label><br>
+        <input type="number" step="0.01" name="lag_spacing"><br><br>
+
+        <label>Beam size:</label><br>
+        <select name="beam_size">
+            <option value="6x6">6×6 inches</option>
+            <option value="8x8">8×8 inches</option>
+        </select><br><br>
+
+        <label>Decking direction:</label><br>
+        <select name="floor_direction">
+            <option value="length">Boards along length (beams along length)</option>
+            <option value="width">Boards along width (beams along width)</option>
+        </select><br><br>
+
+        <label>Front direction:</label><br>
+        <select name="front_direction">
+            <option value="length">Front along length</option>
+            <option value="width">Front along width</option>
+        </select><br><br>
+
+        <button type="submit">Calculate</button>
+    </form>
+
+    {% if result %}
+        <hr>
+        <h2>Calculation result</h2>
+
+        <h3>General parameters:</h3>
+        <p>Original length: {{ result.original_length }} m</p>
+        <p>Original width: {{ result.original_width }} m</p>
+        <p>Length with front included: {{ result.adjusted_length }} m</p>
+        <p><strong>Pier area: {{ result.total_area }} m²</strong></p>
+
+        <h3>Posts:</h3>
+        <p>Post spacing along length: {{ result.spacing_length }} m</p>
+        <p>Post spacing along width: {{ result.spacing_width }} m</p>
+        <p>Number of posts along length: {{ result.count_length }}</p>
+        <p>Number of posts along width: {{ result.count_width }}</p>
+        <p><strong>Total posts: {{ result.total_posts }}</strong></p>
+        <p>Beam type: {{ result.beam_size }}</p>
+        <p>Decking direction: {{ result.floor_direction }}</p>
+        <p>Front direction: {{ result.front_direction }}</p>
+
+        <h3>Beams 3×8 (post binding):</h3>
+        <p>Total length: {{ result.total_3x8_meters }} m</p>
+        <p>Number of boards (6 m): {{ result.total_3x8_boards }}</p>
+
+        <h3>Beams {{ result.beam_size }} (front):</h3>
+        <p>Total length: {{ result.front_beam_meters }} m</p>
+        <p>Number of boards (6 m): {{ result.front_beam_boards }}</p>
+        <p>Number of connections (1.20 m each): {{ result.front_connections }}</p>
+
+        <h3>Beams 3×6 (excluding front):</h3>
+        <p>Total length: {{ result.total_3x6_meterage }} m</p>
+        <p>Number of boards (6 m): {{ result.total_3x6_boards }}</p>
+
+        <h3>Front boards 3×6 (4.20 m):</h3>
+        <p>Number of boards: {{ result.front_boards_count }}</p>
+        <p>Total board length: {{ result.front_boards_meters }} m</p>
+
+        <h3>Blocks 3×6:</h3>
+        <p>Number of blocks: {{ result.cubes_count }}</p>
+
+        <h3>Lags 3×6:</h3>
+        <p>Number of rows: {{ result.num_lag_rows }}</p>
+        <p>Length of one lag (with extension): {{ result.lag_row_length }} m</p>
+        <p>Total lag length: {{ result.total_lag_meterage }} m</p>
+        <p>Number of boards (6 m): {{ result.lag_boards_needed }}</p>
+
+        <h3>Decking 3×6:</h3>
+        <p>Number of rows: {{ result.board_rows }}</p>
+        <p>Total board length: {{ result.total_deck_meterage }} m</p>
+        <p>Number of boards (6 m): {{ result.deck_boards_needed }}</p>
+
+        <h3>Diagonal boards 3×6:</h3>
+        <p>Number of diagonals along length: {{ result.cross_count_length }}</p>
+        <p>Number of diagonals along width: {{ result.cross_count_width }}</p>
+        <p><strong>Total diagonals: {{ result.cross_count_total }}</strong></p>
+        <p>Total diagonal length: {{ result.total_cross_meters }} m</p>
+        <p>Number of boards (6 m): {{ result.cross_boards_needed }}</p>
+        <p>Total bolts for diagonals: {{ result.total_bolts_cross }}</p>
+
+        <h3>Bolts:</h3>
+        <p><strong>Total number of bolts: {{ result.total_bolt_count }}</strong></p>
+        <p><strong>Total bolt length: {{ result.total_bolt_meterage }} m (0.5 m per bolt)</strong></p>
+
+        <h3>Screws:</h3>
+        <p>Screws 40 mm: {{ result.screws_40_count }} pcs (packs of 25: {{ result.screws_40_packs }})</p>
+        <p>Screws 30 mm: {{ result.screws_30_count }} pcs</p>
+        <br><br>
+        <a href="{% url 'pricing' %}">Calculate project cost →
+    {% endif %}
+    </div>
+</body>
+</html>
+
+
+<!-- Русский текст ниже
+
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <link rel="stylesheet"
@@ -124,3 +254,5 @@
     </div>
 </body>
 </html>
+
+-->
