@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+    body { padding: 20px; }
+    label { margin-top: 10px; }
+</style>
+    <meta charset="UTF-8">
+    <title>Калькулятор пирса</title>
+</head>
+<body>
+    <div class="container">
+    <h1>Калькулятор пирса</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <label>Длина пирса (м):</label><br>
+        <input type="number" step="0.1" name="length" required><br><br>
+
+        <label>Ширина пирса (м):</label><br>
+        <input type="number" step="0.1" name="width" required><br><br>
+
+        <label>Расстояние между стойками по длине (м, опц.):</label><br>
+        <input type="number" step="0.1" name="spacing_length"><br><br>
+
+        <label>Расстояние между стойками по ширине (м, опц.):</label><br>
+        <input type="number" step="0.1" name="spacing_width"><br><br>
+
+        <label>Расстояние между лагами (м, опц.):</label><br>
+        <input type="number" step="0.01" name="lag_spacing"><br><br>
+
+        <label>Направляющий брус:</label><br>
+        <select name="beam_size">
+            <option value="6x6">6×6 дюймов</option>
+            <option value="8x8">8×8 дюймов</option>
+        </select><br><br>
+
+        <label>Направление настила:</label><br>
+        <select name="floor_direction">
+            <option value="length">Доски вдоль длины (брусья вдоль длины)</option>
+            <option value="width">Доски вдоль ширины (брусья вдоль ширины)</option>
+        </select><br><br>
+
+        <label>Направление фронта:</label><br>
+        <select name="front_direction">
+            <option value="length">Фронт вдоль длины</option>
+            <option value="width">Фронт вдоль ширины</option>
+        </select><br><br>
+
+        <button type="submit">Рассчитать</button>
+    </form>
+
+    {% if result %}
+        <hr>
+        <h2>Результат расчёта</h2>
+
+        <h3>Общие параметры:</h3>
+        <p>Исходная длина: {{ result.original_length }} м</p>
+        <p>Исходная ширина: {{ result.original_width }} м</p>
+        <p>Длина с учётом фронта: {{ result.adjusted_length }} м</p>
+        <p><strong>Площадь пирса: {{ result.total_area }} м²</strong></p>
+
+        <h3>Стойки:</h3>
+        <p>Расстояние между стойками по длине: {{ result.spacing_length }} м</p>
+        <p>Расстояние между стойками по ширине: {{ result.spacing_width }} м</p>
+        <p>Количество стоек по длине: {{ result.count_length }}</p>
+        <p>Количество стоек по ширине: {{ result.count_width }}</p>
+        <p><strong>Всего стоек: {{ result.total_posts }}</strong></p>
+        <p>Тип направляющего бруса: {{ result.beam_size }}</p>
+        <p>Направление настила: {{ result.floor_direction }}</p>
+        <p>Направление фронта: {{ result.front_direction }}</p>
+
+        <h3>Брусья 3×8 (обвязка стоек):</h3>
+        <p>Общая длина: {{ result.total_3x8_meters }} м</p>
+        <p>Количество досок (6 м): {{ result.total_3x8_boards }}</p>
+
+        <h3>Брусья {{ result.beam_size }} (фронт):</h3>
+        <p>Общая длина: {{ result.front_beam_meters }} м</p>
+        <p>Количество досок (6 м): {{ result.front_beam_boards }}</p>
+        <p>Количество соединений (по 1,20 м): {{ result.front_connections }}</p>
+
+        <h3>Брус 3×6 (исключая фронт):</h3>
+        <p>Общая длина: {{ result.total_3x6_meterage }} м</p>
+        <p>Количество досок (6 м): {{ result.total_3x6_boards }}</p>
+
+        <h3>Фронтовые доски 3×6 (4,20 м):</h3>
+        <p>Количество досок: {{ result.front_boards_count }}</p>
+        <p>Общая длина досок: {{ result.front_boards_meters }} м</p>
+
+        <h3>Кубики 3×6:</h3>
+        <p>Количество кубиков: {{ result.cubes_count }}</p>
+
+        <h3>Лаги 3×6:</h3>
+        <p>Количество рядов: {{ result.num_lag_rows }}</p>
+        <p>Длина одной лаги (с выпуском): {{ result.lag_row_length }} м</p>
+        <p>Общая длина лаг: {{ result.total_lag_meterage }} м</p>
+        <p>Количество досок (6 м): {{ result.lag_boards_needed }}</p>
+
+        <h3>Настил 3×6:</h3>
+        <p>Количество рядов: {{ result.board_rows }}</p>
+        <p>Общая длина досок: {{ result.total_deck_meterage }} м</p>
+        <p>Количество досок (6 м): {{ result.deck_boards_needed }}</p>
+
+        <h3>Диагональные доски 3×6:</h3>
+        <p>Количество диагоналей вдоль длины: {{ result.cross_count_length }}</p>
+        <p>Количество диагоналей вдоль ширины: {{ result.cross_count_width }}</p>
+        <p><strong>Всего диагоналей: {{ result.cross_count_total }}</strong></p>
+        <p>Общая длина диагоналей: {{ result.total_cross_meters }} м</p>
+        <p>Количество досок (6 м): {{ result.cross_boards_needed }}</p>
+        <p>Всего болтов для диагоналей: {{ result.total_bolts_cross }}</p>
+
+        <h3>Болты:</h3>
+        <p><strong>Общее количество болтов: {{ result.total_bolt_count }}</strong></p>
+        <p><strong>Суммарная длина болтов: {{ result.total_bolt_meterage }} м (0,5 м на болт)</strong></p>
+
+        <h3>Шурупы:</h3>
+        <p>Шурупы 40 мм: {{ result.screws_40_count }} шт (пачек по 25 шт: {{ result.screws_40_packs }})</p>
+        <p>Шурупы 30 мм: {{ result.screws_30_count }} шт</p>
+        <br><br>
+        <a href="{% url 'pricing' %}">Рассчитать стоимость проекта →
+    {% endif %}
+    </div>
+</body>
+</html>

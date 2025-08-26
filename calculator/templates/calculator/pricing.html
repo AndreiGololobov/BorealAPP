@@ -1,0 +1,61 @@
+<!-- templates/calculator/pricing.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+    body { padding: 20px; }
+    label { margin-top: 10px; }
+</style>
+    <meta charset="UTF-8">
+    <title>Стоимость проекта</title>
+</head>
+<body>
+    <div class="container">
+    <h1>Стоимость проекта</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <h3>Цены на материалы (в nok/м или nok/шт):</h3>
+        <label>Брус 3×8 (nok/м): <input type="number" step="0.01" name="price_3x8" value="0"></label><br>
+        <label>Брус 3×6 (nok//м): <input type="number" step="0.01" name="price_3x6" value="0"></label><br>
+        <label>Брус 6×6 (nok//м): <input type="number" step="0.01" name="price_6x6" value="0"></label><br>
+        <label>Брус 8×8 (nok//м): <input type="number" step="0.01" name="price_8x8" value="0"></label><br>
+        <label>Болты (nok/м): <input type="number" step="0.01" name="price_bolt" value="0"></label><br>
+        <label>Шурупы 30 мм (nok/шт): <input type="number" step="0.01" name="price_screw_30" value="0"></label><br>
+        <label>Шурупы 40 мм (nok/шт): <input type="number" step="0.01" name="price_screw_40" value="0"></label><br>
+
+        <h3>Стоимость работы:</h3>
+        <label>Цена за день (в nok): <input type="number" step="1" name="price_day" value="0"></label><br>
+        <label>Количество дней: <input type="number" step="1" name="days" value="0"></label><br><br>
+
+        <button type="submit">Рассчитать стоимость</button>
+    </form>
+
+    {% if result %}
+        <hr>
+        <h2>Итоговая стоимость</h2>
+
+        <h3>Материалы:</h3>
+        <p>Брус 3×8: {{ result.cost_3x8 }} nok</p>
+        <p>Брус 3×6 (вкл. фронт): {{ result.cost_3x6 }} nok</p>
+        <p>Брус 6×6: {{ result.cost_6x6 }} nok</p>
+        <p>Брус 8×8: {{ result.cost_8x8 }} nok</p>
+        <p>Болты (по 1 м): {{ result.cost_bolts }} nok</p>
+        <p>Шурупы 30 мм: {{ result.cost_screws_30 }} nok</p>
+        <p>Шурупы 40 мм: {{ result.cost_screws_40 }} nok</p>
+
+        <p><strong>Всего стоимость материалов: {{ result.total_materials }} nok</strong></p>
+
+        <h3>Работа:</h3>
+        <p>{{ result.days }} дней × {{ result.price_day }} nok/день = <strong>{{ result.total_work }} nok</strong></p>
+
+        <h2>Общая стоимость проекта: <strong>{{ result.total_price }} nok</strong></h2>
+    {% endif %}
+</div>
+    <br><a href="/">← Назад к калькулятору</a>
+
+</body>
+</html>
