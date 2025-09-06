@@ -21,7 +21,7 @@ def index(request):
         deck_board_width = 0.15
         board_length = 6.0
 
-        lag_spacing = float(lag_spacing_input) if lag_spacing_input else 0.30
+        lag_spacing = float(lag_spacing_input) if lag_spacing_input else 0.40
         spacing_l_limit = float(spacing_length_input) if spacing_length_input else max_post_spacing
         spacing_w_limit = float(spacing_width_input) if spacing_width_input else max_post_spacing
 
