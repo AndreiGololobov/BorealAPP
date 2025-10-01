@@ -1,127 +1,154 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<style>
-    body { padding: 20px; }
-    label { margin-top: 10px; }
-</style>
-    <meta charset="UTF-8">
-    <title>Project Cost</title>
-</head>
-<body>
-    <div class="container">
-    <h1>Project Cost</h1>
-
-    <form method="post">
-        {% csrf_token %}
-
-        <h3>Material prices (in nok/m or nok/pcs):</h3>
-        <label>Beam 3×8 (nok/m): <input type="number" step="0.01" name="price_3x8" value="0"></label><br>
-        <label>Beam 3×6 (nok/m): <input type="number" step="0.01" name="price_3x6" value="0"></label><br>
-        <label>Beam 6×6 (nok/m): <input type="number" step="0.01" name="price_6x6" value="0"></label><br>
-        <label>Beam 8×8 (nok/m): <input type="number" step="0.01" name="price_8x8" value="0"></label><br>
-        <label>Bolts (nok/m): <input type="number" step="0.01" name="price_bolt" value="0"></label><br>
-        <label>Screws 30 mm (nok/pcs): <input type="number" step="0.01" name="price_screw_30" value="0"></label><br>
-        <label>Screws 40 mm (nok/pcs): <input type="number" step="0.01" name="price_screw_40" value="0"></label><br>
-
-        <h3>Labor cost:</h3>
-        <label>Price per day (in nok): <input type="number" step="1" name="price_day" value="0"></label><br>
-        <label>Number of days: <input type="number" step="1" name="days" value="0"></label><br><br>
-
-        <button type="submit">Calculate cost</button>
-    </form>
-
-    {% if result %}
-        <hr>
-        <h2>Total cost</h2>
-
-        <h3>Materials:</h3>
-        <p>Beam 3×8: {{ result.cost_3x8 }} nok</p>
-        <p>Beam 3×6 (incl. front): {{ result.cost_3x6 }} nok</p>
-        <p>Beam 6×6: {{ result.cost_6x6 }} nok</p>
-        <p>Beam 8×8: {{ result.cost_8x8 }} nok</p>
-        <p>Bolts (per 1 m): {{ result.cost_bolts }} nok</p>
-        <p>Screws 30 mm: {{ result.cost_screws_30 }} nok</p>
-        <p>Screws 40 mm: {{ result.cost_screws_40 }} nok</p>
-
-        <p><strong>Total material cost: {{ result.total_materials }} nok</strong></p>
-
-        <h3>Labor:</h3>
-        <p>{{ result.days }} days × {{ result.price_day }} nok/day = <strong>{{ result.total_work }} nok</strong></p>
-
-        <h2>Total project cost: <strong>{{ result.total_price }} nok</strong></h2>
-    {% endif %}
-</div>
-    <br><a href="/">← Back to calculator</a>
-
-</body>
-</html>
-
-
-<!-- Русский текст и код ниже
-templates/calculator/pricing.html
-
-<!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<style>
-    body { padding: 20px; }
-    label { margin-top: 10px; }
-</style>
     <meta charset="UTF-8">
-    <title>Стоимость проекта</title>
+    <title>Расчёт стоимости</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { padding: 20px; }
+        .table th { background-color: #f8f9fa; }
+    </style>
 </head>
 <body>
-    <div class="container">
-    <h1>Стоимость проекта</h1>
+<div class="container">
+    <h1 class="text-center mb-4">Расчёт стоимости</h1>
 
     <form method="post">
         {% csrf_token %}
+        {% if materials %}
+        <h3>Сводка материалов</h3>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm table-hover">
+            <thead>
+            <tr>
+                <th>Материал</th>
+                <th>Метраж (м)</th>
+                <th>Количество (шт)</th>
+                <th>Цена</th>
+                <th>Сумма (nok)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Брусья 3×8</td>
+                <td>{{ materials.total_3x8_meterage|floatformat:2 }}</td>
+                <td>{{ materials.total_3x8_board_count }}</td>
+                <td><input type="number" step="0.01" name="price_3x8" class="form-control" placeholder="nok/м" value="{{ request.POST.price_3x8|default:'' }}"></td>
+                <td>{{ result.cost_3x8|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>Материал 3×6</td>
+                <td>{{ materials.total_3x6_meterage|floatformat:2 }}</td>
+                <td>{{ materials.total_3x6_board_count }}</td>
+                <td><input type="number" step="0.01" name="price_3x6" class="form-control" placeholder="nok/м" value="{{ request.POST.price_3x6|default:'' }}"></td>
+                <td>{{ result.cost_3x6|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>{{ materials.beam_size }} направляющий</td>
+                <td>{{ materials.total_guiding_meterage|floatformat:2 }}</td>
+                <td>{{ materials.total_guiding_board_count }}</td>
+                <td>
+                    {% if materials.beam_size == "6x6" %}
+                        <input type="number" step="0.01" name="price_6x6" class="form-control" placeholder="nok/м" value="{{ request.POST.price_6x6|default:'' }}">
+                    {% else %}
+                        <input type="number" step="0.01" name="price_8x8" class="form-control" placeholder="nok/м" value="{{ request.POST.price_8x8|default:'' }}">
+                    {% endif %}
+                </td>
+                <td>
+                    {% if materials.beam_size == "6x6" %}
+                        {{ result.cost_6x6|default:"-" }}
+                    {% else %}
+                        {{ result.cost_8x8|default:"-" }}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Стойки</td>
+                <td>-</td>
+                <td>{{ materials.total_posts_count }}</td>
+                <td><input type="number" step="0.01" name="price_post" class="form-control" placeholder="nok/шт" value="{{ request.POST.price_post|default:'' }}"></td>
+                <td>{{ result.cost_posts|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>Шурупы 30 мм</td>
+                <td>-</td>
+                <td>{{ materials.total_screws_30 }}</td>
+                <td><input type="number" step="0.01" name="price_screw_30" class="form-control" placeholder="nok/шт" value="{{ request.POST.price_screw_30|default:'' }}"></td>
+                <td>{{ result.cost_screws_30|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>Шурупы 40 мм</td>
+                <td>-</td>
+                <td>{{ materials.total_screws_40 }}</td>
+                <td><input type="number" step="0.01" name="price_screw_40" class="form-control" placeholder="nok/шт" value="{{ request.POST.price_screw_40|default:'' }}"></td>
+                <td>{{ result.cost_screws_40|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>Болты</td>
+                <td>{{ materials.total_bolt_meterage_purchase|floatformat:2 }}</td>
+                <td>{{ materials.total_bolt_count }}</td>
+                <td><input type="number" step="0.01" name="price_bolt" class="form-control" placeholder="nok/м" value="{{ request.POST.price_bolt|default:'' }}"></td>
+                <td>{{ result.cost_bolts|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>Гайки</td>
+                <td>-</td>
+                <td>{{ materials.total_nuts_count }}</td>
+                <td><input type="number" step="0.01" name="price_nut" class="form-control" placeholder="nok/шт" value="{{ request.POST.price_nut|default:'' }}"></td>
+                <td>{{ result.cost_nuts|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td>Шайбы</td>
+                <td>-</td>
+                <td>{{ materials.total_washers_count }}</td>
+                <td><input type="number" step="0.01" name="price_washer" class="form-control" placeholder="nok/шт" value="{{ request.POST.price_washer|default:'' }}"></td>
+                <td>{{ result.cost_washers|default:"-" }}</td>
+            </tr>
+            </tbody>
+            </table>
+        </div>
+        {% endif %}
 
-        <h3>Цены на материалы (в nok/м или nok/шт):</h3>
-        <label>Брус 3×8 (nok/м): <input type="number" step="0.01" name="price_3x8" value="0"></label><br>
-        <label>Брус 3×6 (nok//м): <input type="number" step="0.01" name="price_3x6" value="0"></label><br>
-        <label>Брус 6×6 (nok//м): <input type="number" step="0.01" name="price_6x6" value="0"></label><br>
-        <label>Брус 8×8 (nok//м): <input type="number" step="0.01" name="price_8x8" value="0"></label><br>
-        <label>Болты (nok/м): <input type="number" step="0.01" name="price_bolt" value="0"></label><br>
-        <label>Шурупы 30 мм (nok/шт): <input type="number" step="0.01" name="price_screw_30" value="0"></label><br>
-        <label>Шурупы 40 мм (nok/шт): <input type="number" step="0.01" name="price_screw_40" value="0"></label><br>
+        <h3 class="mt-4">Стоимость работы</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Цена за день (nok):</label>
+                <input type="number" step="0.01" name="price_day" class="form-control" placeholder="nok/день" value="{{ request.POST.price_day|default:'' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Количество дней:</label>
+                <input type="number" name="days" class="form-control" value="{{ request.POST.days|default:'' }}">
+            </div>
+        </div>
 
-        <h3>Стоимость работы:</h3>
-        <label>Цена за день (в nok): <input type="number" step="1" name="price_day" value="0"></label><br>
-        <label>Количество дней: <input type="number" step="1" name="days" value="0"></label><br><br>
-
-        <button type="submit">Рассчитать стоимость</button>
+        <div class="mt-4">
+            <button type="submit" name="action" value="calculate" class="btn btn-primary">Рассчитать</button>
+            <button type="submit" name="action" value="download_pdf" class="btn btn-success">Сохранить в PDF</button>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="include_details" id="includeDetails" value="1">
+                <label class="form-check-label" for="includeDetails">
+                    Включить подробную таблицу материалов в PDF
+                </label>
+            </div>
+            <a href="{% url 'index' %}" class="btn btn-secondary mt-3">Назад</a>
+        </div>
     </form>
 
     {% if result %}
-        <hr>
-        <h2>Итоговая стоимость</h2>
+    <hr>
+    <h3>Итоги</h3>
+    <div class="table-responsive">
+        <table class="table table-striped table-sm table-hover">
+            <tr><th>Итого материалы</th><td>{{ result.total_materials|floatformat:2 }}</td></tr>
+            <tr><th>Работа</th><td>{{ result.total_work|floatformat:2 }}</td></tr>
+            <tr class="table-success"><th>Общая стоимость</th><td>{{ result.total_price|floatformat:2 }}</td></tr>
+        </table>
+    </div>
+    {% endif %}
 
-        <h3>Материалы:</h3>
-        <p>Брус 3×8: {{ result.cost_3x8 }} nok</p>
-        <p>Брус 3×6 (вкл. фронт): {{ result.cost_3x6 }} nok</p>
-        <p>Брус 6×6: {{ result.cost_6x6 }} nok</p>
-        <p>Брус 8×8: {{ result.cost_8x8 }} nok</p>
-        <p>Болты (по 1 м): {{ result.cost_bolts }} nok</p>
-        <p>Шурупы 30 мм: {{ result.cost_screws_30 }} nok</p>
-        <p>Шурупы 40 мм: {{ result.cost_screws_40 }} nok</p>
-
-        <p><strong>Всего стоимость материалов: {{ result.total_materials }} nok</strong></p>
-
-        <h3>Работа:</h3>
-        <p>{{ result.days }} дней × {{ result.price_day }} nok/день = <strong>{{ result.total_work }} nok</strong></p>
-
-        <h2>Общая стоимость проекта: <strong>{{ result.total_price }} nok</strong></h2>
+    {% if error %}
+    <div class="alert alert-danger mt-3">{{ error }}</div>
     {% endif %}
 </div>
-    <br><a href="/">← Назад к калькулятору</a>
-
 </body>
 </html>
-
--->

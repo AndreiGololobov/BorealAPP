@@ -1,258 +1,378 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<style>
-    body { padding: 20px; }
-    label { margin-top: 10px; }
-</style>
-    <meta charset="UTF-8">
-    <title>Pier Calculator</title>
-</head>
-<body>
-    <div class="container">
-    <h1>Pier Calculator</h1>
-
-    <form method="post">
-        {% csrf_token %}
-        <label>Pier length (m):</label><br>
-        <input type="number" step="0.1" name="length" required><br><br>
-
-        <label>Pier width (m):</label><br>
-        <input type="number" step="0.1" name="width" required><br><br>
-
-        <label>Post spacing along length (m, optional):</label><br>
-        <input type="number" step="0.1" name="spacing_length"><br><br>
-
-        <label>Post spacing along width (m, optional):</label><br>
-        <input type="number" step="0.1" name="spacing_width"><br><br>
-
-        <label>Lag spacing (m, optional):</label><br>
-        <input type="number" step="0.01" name="lag_spacing"><br><br>
-
-        <label>Beam size:</label><br>
-        <select name="beam_size">
-            <option value="6x6">6×6 inches</option>
-            <option value="8x8">8×8 inches</option>
-        </select><br><br>
-
-        <label>Decking direction:</label><br>
-        <select name="floor_direction">
-            <option value="length">Boards along length (3х8 beams along length)</option>
-            <option value="width">Boards along width (3х8 beams along width)</option>
-        </select><br><br>
-
-        <label>Front direction:</label><br>
-        <select name="front_direction">
-            <option value="length">Front along length</option>
-            <option value="width">Front along width</option>
-        </select><br><br>
-
-        <button type="submit">Calculate</button>
-    </form>
-
-    {% if result %}
-        <hr>
-        <h2>Calculation result</h2>
-
-        <h3>General parameters:</h3>
-        <p>Original length: {{ result.original_length }} m</p>
-        <p>Original width: {{ result.original_width }} m</p>
-        <p>Length with front included: {{ result.adjusted_length }} m</p>
-        <p><strong>Pier area: {{ result.total_area }} m²</strong></p>
-
-        <h3>Posts:</h3>
-        <p>Post spacing along length: {{ result.spacing_length }} m</p>
-        <p>Post spacing along width: {{ result.spacing_width }} m</p>
-        <p>Number of posts along length: {{ result.count_length }}</p>
-        <p>Number of posts along width: {{ result.count_width }}</p>
-        <p><strong>Total posts: {{ result.total_posts }}</strong></p>
-        <p>Beam type: {{ result.beam_size }}</p>
-        <p>Decking direction: {{ result.floor_direction }}</p>
-        <p>Front direction: {{ result.front_direction }}</p>
-
-        <h3>Beams 3×8 (post binding):</h3>
-        <p>Total length: {{ result.total_3x8_meters }} m</p>
-        <p>Number of boards (6 m): {{ result.total_3x8_boards }}</p>
-
-        <h3>Beams {{ result.beam_size }} (front):</h3>
-        <p>Total length: {{ result.front_beam_meters }} m</p>
-        <p>Number of boards (6 m): {{ result.front_beam_boards }}</p>
-        <p>Number of connections (1.20 m each): {{ result.front_connections }}</p>
-
-        <h3>Beams 3×6 (excluding front):</h3>
-        <p>Total length: {{ result.total_3x6_meterage }} m</p>
-        <p>Number of boards (6 m): {{ result.total_3x6_boards }}</p>
-
-        <h3>Front boards 3×6 (4.20 m):</h3>
-        <p>Number of boards: {{ result.front_boards_count }}</p>
-        <p>Total board length: {{ result.front_boards_meters }} m</p>
-
-        <h3>Blocks 3×6:</h3>
-        <p>Number of blocks: {{ result.cubes_count }}</p>
-
-        <h3>Lags 3×6:</h3>
-        <p>Number of rows: {{ result.num_lag_rows }}</p>
-        <p>Length of one lag (with extension): {{ result.lag_row_length }} m</p>
-        <p>Total lag length: {{ result.total_lag_meterage }} m</p>
-        <p>Number of boards (6 m): {{ result.lag_boards_needed }}</p>
-
-        <h3>Decking 3×6:</h3>
-        <p>Number of rows: {{ result.board_rows }}</p>
-        <p>Total board length: {{ result.total_deck_meterage }} m</p>
-        <p>Number of boards (6 m): {{ result.deck_boards_needed }}</p>
-
-        <h3>Diagonal boards 3×6:</h3>
-        <p>Number of diagonals along length: {{ result.cross_count_length }}</p>
-        <p>Number of diagonals along width: {{ result.cross_count_width }}</p>
-        <p><strong>Total diagonals: {{ result.cross_count_total }}</strong></p>
-        <p>Total diagonal length: {{ result.total_cross_meters }} m</p>
-        <p>Number of boards (6 m): {{ result.cross_boards_needed }}</p>
-        <p>Total bolts for diagonals: {{ result.total_bolts_cross }}</p>
-
-        <h3>Bolts:</h3>
-        <p><strong>Total number of bolts: {{ result.total_bolt_count }}</strong></p>
-        <p><strong>Total bolt length: {{ result.total_bolt_meterage }} m (0.5 m per bolt)</strong></p>
-
-        <h3>Screws:</h3>
-        <p>Screws 40 mm: {{ result.screws_40_count }} pcs (packs of 25: {{ result.screws_40_packs }})</p>
-        <p>Screws 30 mm: {{ result.screws_30_count }} pcs</p>
-        <br><br>
-        <a href="{% url 'pricing' %}">Calculate project cost →
-    {% endif %}
-    </div>
-</body>
-</html>
-
-
-<!-- Русский текст ниже
-
-<!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<style>
-    body { padding: 20px; }
-    label { margin-top: 10px; }
-</style>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор пирса</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body { padding: 20px; padding-bottom: 40px; }
+        .svg-container { border: 1px solid #ccc; margin-bottom: 20px; max-width: 400px; }
+        .svg-container svg { max-width: 100%; height: auto; }
+        .table th { background-color: #f8f9fa; }
+        .accordion-button { font-weight: bold; }
+        .error-message { display: none; color: red; }
+        text { font-size: 12px; dominant-baseline: middle; text-anchor: middle; }
+    </style>
 </head>
 <body>
-    <div class="container">
-    <h1>Калькулятор пирса</h1>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Калькулятор пирса</h1>
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-6">
+                <label class="form-label">Длина пирса (м):</label>
+                <input type="text" name="length" class="form-control" value="{{ result.original_length|default_if_none:'' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ширина пирса (м):</label>
+                <input type="text" name="width" class="form-control" value="{{ result.original_width|default_if_none:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Расстояние между стойками по длине (м, опц.):</label>
+                <input type="text" name="spacing_length" class="form-control" value="{{ result.input_spacing_length }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Расстояние между стойками по ширине (м, опц.):</label>
+                <input type="text" name="spacing_width" class="form-control" value="{{ result.input_spacing_width }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Расстояние между лагами (м, опц.):</label>
+                <input type="text" name="lag_spacing" class="form-control" value="{{ result.input_lag_spacing }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Выбор направляющего бруса:</label>
+                <select name="beam_size" class="form-select">
+                    <option value="6x6" {% if result.beam_size == '6x6' %}selected{% endif %}>6×6 дюймов</option>
+                    <option value="8x8" {% if result.beam_size == '8x8' %}selected{% endif %}>8×8 дюймов</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Направление фронта:</label>
+                <select name="front_direction" class="form-select">
+                    <option value="length" {% if result.front_direction == 'length' %}selected{% endif %}>Фронт вдоль длины</option>
+                    <option value="width" {% if result.front_direction == 'width' %}selected{% endif %}>Фронт вдоль ширины</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Направление настила:</label>
+                <select name="deck_direction" class="form-select">
+                    <option value="length" {% if result.deck_direction == 'length' %}selected{% endif %}>3×8 вдоль длины</option>
+                    <option value="width" {% if result.deck_direction == 'width' %}selected{% endif %}>3×8 вдоль ширины</option>
+                </select>
+            </div>
+            <div class="col-12 mt-3 d-grid gap-2 d-md-flex justify-content-md-start">
+                <button type="submit" name="action" value="calculate" class="btn btn-primary">
+                    <i class="fas fa-calculator"></i> Рассчитать
+                </button>
+                <button type="submit" name="action" value="reset" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i> Очистить
+                </button>
+            </div>
+        </form>
 
-    <form method="post">
-        {% csrf_token %}
-        <label>Длина пирса (м):</label><br>
-        <input type="number" step="0.1" name="length" required><br><br>
+        {% if result %}
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3><i class="fas fa-drafting-compass"></i> Схема пирса</h3>
+                <div class="svg-container">
+                    <svg id="pierSchema" width="400" height="300"></svg>
+                </div>
+                <div id="schemaError" class="error-message">Ошибка при отображении схемы. Проверьте введённые данные.</div>
+  <script>
+(function(){
+  // Ждём JSON из views.py: result.schema_data — СТРОКА JSON
+  var raw = '{{ result.schema_data|safe }}';
+  try {
+    var data = raw ? JSON.parse(raw) : null;
+    if (!data || !data.dimensions) return;
 
-        <label>Ширина пирса (м):</label><br>
-        <input type="number" step="0.1" name="width" required><br><br>
+    // 1) Геометрия: X = ширина, Y = длина (как на твоём образце)
+    var L = +data.dimensions.length || 0;  // метры
+    var W = +data.dimensions.width  || 0;  // метры
+    if (L <= 0 || W <= 0) return;
 
-        <label>Расстояние между стойками по длине (м, опц.):</label><br>
-        <input type="number" step="0.1" name="spacing_length"><br><br>
+    var scale = 40; // px/м — при желании поменяешь
+    var pad   = {l:60,t:60,r:140,b:100}; // поля под подписи
 
-        <label>Расстояние между стойками по ширине (м, опц.):</label><br>
-        <input type="number" step="0.1" name="spacing_width"><br><br>
+    var width  = W * scale;   // по X — ШИРИНА
+    var height = L * scale;   // по Y — ДЛИНА
 
-        <label>Расстояние между лагами (м, опц.):</label><br>
-        <input type="number" step="0.01" name="lag_spacing"><br><br>
+    var X0 = pad.l, Y0 = pad.t, XR = X0 + width, YB = Y0 + height;
+    var CX = (X0 + XR)/2, CY = (Y0 + YB)/2;
 
-        <label>Направляющий брус:</label><br>
-        <select name="beam_size">
-            <option value="6x6">6×6 дюймов</option>
-            <option value="8x8">8×8 дюймов</option>
-        </select><br><br>
+    // 2) Готовим SVG
+    var svg = document.getElementById('pierSchema');
+    if (!svg) return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var vbW = pad.l + width + pad.r, vbH = pad.t + height + pad.b;
+    svg.setAttribute('viewBox', '0 0 ' + vbW + ' ' + vbH);
+    svg.innerHTML = ''; // чистим
 
-        <label>Направление настила:</label><br>
-        <select name="floor_direction">
-            <option value="length">Доски вдоль длины (брусья вдоль длины)</option>
-            <option value="width">Доски вдоль ширины (брусья вдоль ширины)</option>
-        </select><br><br>
+    function E(n,a){ var el=document.createElementNS(NS,n); for(var k in a){el.setAttribute(k,a[k])} return el; }
 
-        <label>Направление фронта:</label><br>
-        <select name="front_direction">
-            <option value="length">Фронт вдоль длины</option>
-            <option value="width">Фронт вдоль ширины</option>
-        </select><br><br>
+    // 3) Тело пирса
+    svg.appendChild(E('rect',{x:X0,y:Y0,width:width,height:height,fill:'#e6f7fb',stroke:'#000','stroke-width':2,rx:4}));
 
-        <button type="submit">Рассчитать</button>
-    </form>
+    // 4) Ряды 3×8 + коричневая стрелка
+    var n = Math.max(0, +data.num_lines_3x8 || 0);
+    if (n > 0) {
+      if (data.deck_direction === 'length') {
+        // «вдоль длины» — горизонтальные линии
+        for (var i=1;i<=n;i++){
+          var y = Y0 + i*(height/(n+1));
+          svg.appendChild(E('line',{x1:X0,y1:y,x2:XR,y2:y,stroke:'#8B4513','stroke-width':3,opacity:0.9}));
+        }
+        // Стрелка и подпись после линий
+        var ya = CY, xa1 = X0+20, xa2 = XR-20;
+        svg.appendChild(E('line',{x1:xa1,y1:ya,x2:xa2,y2:ya,stroke:'#8B4513','stroke-width':3}));
+        svg.appendChild(E('polygon',{points:(xa2-8)+','+(ya-5)+' '+xa2+','+ya+' '+(xa2-8)+','+(ya+5), fill:'#8B4513'}));
+        var t = E('text',{x:CX,y:ya+15,fill:'#8B4513','text-anchor':'middle'});
+        t.textContent='Брусья 3×8';
+        svg.appendChild(t);
+      } else {
+        // «вдоль ширины» — вертикальные линии
+        for (var j=1;j<=n;j++){
+          var x = X0 + j*(width/(n+1));
+          svg.appendChild(E('line',{x1:x,y1:Y0,x2:x,y2:YB,stroke:'#8B4513','stroke-width':3,opacity:0.9}));
+        }
+        // Стрелка и подпись после линий
+        var xa = CX, ya1 = Y0+20, ya2 = YB-20;
+        svg.appendChild(E('line',{x1:xa,y1:ya1,x2:xa,y2:ya2,stroke:'#8B4513','stroke-width':3}));
+        svg.appendChild(E('polygon',{points:(xa-5)+','+(ya2-8)+' '+xa+','+ya2+' '+(xa+5)+','+(ya2-8), fill:'#8B4513'}));
+        var t2 = E('text',{x:xa+25,y:CY,fill:'#8B4513'});
+        t2.setAttribute('transform','rotate(90, '+(xa+25)+', '+CY+')');
+        t2.textContent='Брусья 3×8';
+        svg.appendChild(t2);
+      }
+    }
 
-    {% if result %}
-        <hr>
-        <h2>Результат расчёта</h2>
+    // 5) Фронт как ОСЬ: рисуем только одну линию со стороны фронта, оранжевым
+    if (data.front_direction === 'width') {
+      // Фронт вдоль ширины — нижняя линия
+      svg.appendChild(E('line',{x1:X0,y1:YB,x2:XR,y2:YB,stroke:'#fd7e14','stroke-width':4}));
+      var f = E('text',{x:CX,y:YB+18,fill:'#fd7e14','text-anchor':'middle'}); 
+      f.textContent='Фронт (ось: ширина)'; 
+      svg.appendChild(f);
+    } else {
+      // Фронт вдоль длины — левая линия
+      svg.appendChild(E('line',{x1:X0,y1:Y0,x2:X0,y2:YB,stroke:'#fd7e14','stroke-width':4}));
+      var f2 = E('text',{x:X0-18,y:CY,fill:'#fd7e14'}); f2.setAttribute('transform','rotate(-90, '+(X0-18)+', '+CY+')'); f2.textContent='Фронт (ось: длина)'; svg.appendChild(f2);
+    }
 
-        <h3>Общие параметры:</h3>
-        <p>Исходная длина: {{ result.original_length }} м</p>
-        <p>Исходная ширина: {{ result.original_width }} м</p>
-        <p>Длина с учётом фронта: {{ result.adjusted_length }} м</p>
-        <p><strong>Площадь пирса: {{ result.total_area }} м²</strong></p>
+    // 6) Стойки (если переданы)
+    if (Array.isArray(data.posts)) {
+      data.posts.forEach(function(p){
+        var px = X0 + (p.y||0) * scale + scale/2; // X = ширина (м), по центру ячейки
+        var py = Y0 + (p.x||0) * scale + scale/2; // Y = длина  (м), по центру ячейки
+        svg.appendChild(E('circle',{cx:px,cy:py,r:4,fill:'#dc3545',stroke:'#fff','stroke-width':1}));
+      });
+    }
 
-        <h3>Стойки:</h3>
-        <p>Расстояние между стойками по длине: {{ result.spacing_length }} м</p>
-        <p>Расстояние между стойками по ширине: {{ result.spacing_width }} м</p>
-        <p>Количество стоек по длине: {{ result.count_length }}</p>
-        <p>Количество стоек по ширине: {{ result.count_width }}</p>
-        <p><strong>Всего стоек: {{ result.total_posts }}</strong></p>
-        <p>Тип направляющего бруса: {{ result.beam_size }}</p>
-        <p>Направление настила: {{ result.floor_direction }}</p>
-        <p>Направление фронта: {{ result.front_direction }}</p>
+    // 7) Размерные линии — Ширина сверху, Длина справа (чтобы не налезали)
+    // — ширина
+    var wy = Y0 - 28;
+    svg.appendChild(E('line',{x1:X0,y1:wy,x2:XR,y2:wy,stroke:'#475569','stroke-width':2}));
+    svg.appendChild(E('polygon',{points:(XR-8)+','+(wy-5)+' '+XR+','+wy+' '+(XR-8)+','+(wy+5), fill:'#475569'}));
+    svg.appendChild(E('polygon',{points:(X0+8)+','+(wy-5)+' '+X0+','+wy+' '+(X0+8)+','+(wy+5), fill:'#475569'}));
+    var wt = E('text',{x:CX,y:wy-8,fill:'#475569','text-anchor':'middle'}); wt.textContent='Ширина: '+W.toFixed(2)+' м'; svg.appendChild(wt);
+    // — длина
+    var lx = XR + 28;
+    svg.appendChild(E('line',{x1:lx,y1:Y0,x2:lx,y2:YB,stroke:'#475569','stroke-width':2}));
+    svg.appendChild(E('polygon',{points:(lx-5)+','+(YB-8)+' '+lx+','+YB+' '+(lx+5)+','+(YB-8), fill:'#475569'}));
+    svg.appendChild(E('polygon',{points:(lx-5)+','+(Y0+8)+' '+lx+','+Y0+' '+(lx+5)+','+(Y0+8), fill:'#475569'}));
+    var lt = E('text',{x:lx+12,y:CY,fill:'#475569'}); lt.setAttribute('transform','rotate(90, '+(lx+12)+', '+CY+')'); lt.textContent='Длина: '+L.toFixed(2)+' м'; svg.appendChild(lt);
 
-        <h3>Брусья 3×8 (обвязка стоек):</h3>
-        <p>Общая длина: {{ result.total_3x8_meters }} м</p>
-        <p>Количество досок (6 м): {{ result.total_3x8_boards }}</p>
-
-        <h3>Брусья {{ result.beam_size }} (фронт):</h3>
-        <p>Общая длина: {{ result.front_beam_meters }} м</p>
-        <p>Количество досок (6 м): {{ result.front_beam_boards }}</p>
-        <p>Количество соединений (по 1,20 м): {{ result.front_connections }}</p>
-
-        <h3>Брус 3×6 (исключая фронт):</h3>
-        <p>Общая длина: {{ result.total_3x6_meterage }} м</p>
-        <p>Количество досок (6 м): {{ result.total_3x6_boards }}</p>
-
-        <h3>Фронтовые доски 3×6 (4,20 м):</h3>
-        <p>Количество досок: {{ result.front_boards_count }}</p>
-        <p>Общая длина досок: {{ result.front_boards_meters }} м</p>
-
-        <h3>Кубики 3×6:</h3>
-        <p>Количество кубиков: {{ result.cubes_count }}</p>
-
-        <h3>Лаги 3×6:</h3>
-        <p>Количество рядов: {{ result.num_lag_rows }}</p>
-        <p>Длина одной лаги (с выпуском): {{ result.lag_row_length }} м</p>
-        <p>Общая длина лаг: {{ result.total_lag_meterage }} м</p>
-        <p>Количество досок (6 м): {{ result.lag_boards_needed }}</p>
-
-        <h3>Настил 3×6:</h3>
-        <p>Количество рядов: {{ result.board_rows }}</p>
-        <p>Общая длина досок: {{ result.total_deck_meterage }} м</p>
-        <p>Количество досок (6 м): {{ result.deck_boards_needed }}</p>
-
-        <h3>Диагональные доски 3×6:</h3>
-        <p>Количество диагоналей вдоль длины: {{ result.cross_count_length }}</p>
-        <p>Количество диагоналей вдоль ширины: {{ result.cross_count_width }}</p>
-        <p><strong>Всего диагоналей: {{ result.cross_count_total }}</strong></p>
-        <p>Общая длина диагоналей: {{ result.total_cross_meters }} м</p>
-        <p>Количество досок (6 м): {{ result.cross_boards_needed }}</p>
-        <p>Всего болтов для диагоналей: {{ result.total_bolts_cross }}</p>
-
-        <h3>Болты:</h3>
-        <p><strong>Общее количество болтов: {{ result.total_bolt_count }}</strong></p>
-        <p><strong>Суммарная длина болтов: {{ result.total_bolt_meterage }} м (0,5 м на болт)</strong></p>
-
-        <h3>Шурупы:</h3>
-        <p>Шурупы 40 мм: {{ result.screws_40_count }} шт (пачек по 25 шт: {{ result.screws_40_packs }})</p>
-        <p>Шурупы 30 мм: {{ result.screws_30_count }} шт</p>
-        <br><br>
-        <a href="{% url 'pricing' %}">Рассчитать стоимость проекта →
-    {% endif %}
+  } catch(e) {
+    console.error('schema error', e);
+    var err = document.getElementById('schemaError'); if (err) err.style.display = 'block';
+  }
+})();
+</script>
+            </div>
+            <div class="col-md-6">
+                <div class="accordion" id="resultsAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#posts">
+                                <i class="fas fa-columns"></i> Стойки
+                            </button>
+                        </h2>
+                        <div id="posts" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Параметр</th><th>Значение</th></tr>
+                                        <tr><td>Исходная длина</td><td>{{ result.original_length|floatformat:2 }} м</td></tr>
+                                        <tr><td>Исходная ширина</td><td>{{ result.original_width|floatformat:2 }} м</td></tr>
+                                        <tr><td>Длина с учётом фронта</td><td>{{ result.adjusted_length|floatformat:2 }} м</td></tr>
+                                        <tr><td>Ширина с учётом фронта</td><td>{{ result.adjusted_width|floatformat:2 }} м</td></tr>
+                                        <tr><td>Расстояние по длине</td><td>{{ result.spacing_length|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество по длине</td><td>{{ result.count_length }}</td></tr>
+                                        <tr><td>Расстояние по ширине</td><td>{{ result.spacing_width|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество по ширине</td><td>{{ result.count_width }}</td></tr>
+                                        <tr><td>Всего стоек</td><td>{{ result.total_posts }}</td></tr>
+                                        <tr><td>Площадь пирса</td><td>{{ result.total_area|floatformat:2 }} м²</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#beams">
+                                <i class="fas fa-wood"></i> Брусья 3×8
+                            </button>
+                        </h2>
+                        <div id="beams" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Параметр</th><th>Значение</th></tr>
+                                        <tr><td>Длина одной линии</td><td>{{ result.line_length_3x8|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество линий</td><td>{{ result.num_lines_3x8 }}</td></tr>
+                                        <tr><td>Дополнительные вставки</td><td>{{ result.inserts_3x8|floatformat:2 }} м</td></tr>
+                                        <tr><td>Общий метраж</td><td>{{ result.total_3x8_meters|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество досок (6 м)</td><td>{{ result.total_3x8_boards }}</td></tr>
+                                        <tr><td>Болты</td><td>{{ result.bolts_beam_count }}</td></tr>
+                                        <tr><td>Метраж болтов</td><td>{{ result.bolts_beam_meterage|floatformat:2 }} м</td></tr>
+                                        <tr><td>Гайки</td><td>{{ result.nuts_beam_count }}</td></tr>
+                                        <tr><td>Шайбы</td><td>{{ result.washers_beam_count }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lags">
+                                <i class="fas fa-wood"></i> Лаги 3×6
+                            </button>
+                        </h2>
+                        <div id="lags" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Параметр</th><th>Значение</th></tr>
+                                        <tr><td>Количество рядов</td><td>{{ result.num_lag_rows }}</td></tr>
+                                        <tr><td>Длина одной лаги</td><td>{{ result.lag_row_length|floatformat:2 }} м</td></tr>
+                                        <tr><td>Общая длина</td><td>{{ result.total_lag_meterage|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество досок (6 м)</td><td>{{ result.lag_boards_needed }}</td></tr>
+                                        <tr><td>Шурупы 30 мм</td><td>{{ result.lag_screws }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#deck">
+                                <i class="fas fa-wood"></i> Настил 3×6
+                            </button>
+                        </h2>
+                        <div id="deck" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Параметр</th><th>Значение</th></tr>
+                                        <tr><td>Количество рядов</td><td>{{ result.board_rows }}</td></tr>
+                                        <tr><td>Количество досок в ряду</td><td>{{ result.boards_per_row }}</td></tr>
+                                        <tr><td>Общая длина</td><td>{{ result.total_deck_meterage|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество досок (6 м)</td><td>{{ result.deck_boards_needed }}</td></tr>
+                                        <tr><td>Шурупы 30 мм</td><td>{{ result.deck_screws }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#diagonals">
+                                <i class="fas fa-wood"></i> Диагональные укосы 3×6
+                            </button>
+                        </h2>
+                        <div id="diagonals" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Параметр</th><th>Значение</th></tr>
+                                        <tr><td>Диагонали вдоль длины</td><td>{{ result.cross_count_length }}</td></tr>
+                                        <tr><td>Диагонали вдоль ширины</td><td>{{ result.cross_count_width }}</td></tr>
+                                        <tr><td>Всего диагоналей</td><td>{{ result.cross_count_total }}</td></tr>
+                                        <tr><td>Общий метраж</td><td>{{ result.total_cross_meters|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество досок (6 м)</td><td>{{ result.cross_boards_needed }}</td></tr>
+                                        <tr><td>Болты</td><td>{{ result.total_bolts_cross }}</td></tr>
+                                        <tr><td>Гайки</td><td>{{ result.nuts_cross_count }}</td></tr>
+                                        <tr><td>Шайбы</td><td>{{ result.washers_cross_count }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#front">
+                                <i class="fas fa-wood"></i> Фронт
+                            </button>
+                        </h2>
+                        <div id="front" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Параметр</th><th>Значение</th></tr>
+                                        <tr><td>Количество досок 3×6</td><td>{{ result.front_boards_count }}</td></tr>
+                                        <tr><td>Общая длина 3×6</td><td>{{ result.front_boards_meters|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество кубиков</td><td>{{ result.front_cubes_count }}</td></tr>
+                                        <tr><td>Шурупы 40 мм (доски)</td><td>{{ result.front_board_screws }}</td></tr>
+                                        <tr><td>Шурупы 30 мм (кубики)</td><td>{{ result.cube_screws }}</td></tr>
+                                        <tr><td>Направляющий брус {{ result.beam_size }}</td><td>{{ result.front_beam_meterage|floatformat:2 }} м</td></tr>
+                                        <tr><td>Количество досок (6 м)</td><td>{{ result.front_beam_boards }}</td></tr>
+                                        <tr><td>Соединения (1.2 м)</td><td>{{ result.front_connections }}</td></tr>
+                                        <tr><td>Болты</td><td>{{ result.front_beam_bolts }}</td></tr>
+                                        <tr><td>Гайки</td><td>{{ result.front_beam_nuts }}</td></tr>
+                                        <tr><td>Шайбы</td><td>{{ result.front_beam_washers }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#summary" aria-expanded="true">
+                                <i class="fas fa-list"></i> Сводка материалов
+                            </button>
+                        </h2>
+                        <div id="summary" class="accordion-collapse collapse show">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm">
+                                        <thead><tr><th>Материал</th><th>Метраж (м)</th><th>Количество (шт)</th></tr></thead>
+                                        <tbody>
+                                            <tr><td>Стойки</td><td>-</td><td>{{ result.total_posts_count }}</td></tr>
+                                            <tr><td>Брусья 3×8</td><td>{{ result.total_3x8_meterage|floatformat:2 }}</td><td>{{ result.total_3x8_board_count }}</td></tr>
+                                            <tr><td>Материал 3×6</td><td>{{ result.total_3x6_meterage|floatformat:2 }}</td><td>{{ result.total_3x6_board_count }}</td></tr>
+                                            <tr><td>{{ result.beam_size }} направляющий</td><td>{{ result.total_guiding_meterage|floatformat:2 }}</td><td>{{ result.total_guiding_board_count }}</td></tr>
+                                            <tr><td>Шурупы 30 мм</td><td>-</td><td>{{ result.total_screws_30 }}</td></tr>
+                                            <tr><td>Шурупы 40 мм</td><td>-</td><td>{{ result.total_screws_40 }}</td></tr>
+                                            <tr><td>Болты</td><td>{{ result.total_bolt_meterage_effective|floatformat:2 }}</td><td>{{ result.total_bolt_count }}</td></tr>
+                                            <tr><td>Гайки</td><td>-</td><td>{{ result.total_nuts_count }}</td></tr>
+                                            <tr><td>Шайбы</td><td>-</td><td>{{ result.total_washers_count }}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <a href="{% url 'pricing' %}" class="btn btn-success"><i class="fas fa-dollar-sign"></i> Перейти к расчёту стоимости</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if error %}
+        <div class="alert alert-danger mt-3">{{ error }}</div>
+        {% endif %}
     </div>
 </body>
 </html>
-
--->

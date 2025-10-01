@@ -127,3 +127,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Настройки сессий и удаление куки при закрытии браузера
+SESSION_COOKIE_AGE = 3600  # 1 час (в секундах)

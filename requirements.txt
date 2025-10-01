@@ -1,2 +1,7 @@
-Django>=5.0,<6.0
-whitenoise>=6.6whitenoise==6.9.0
+asgiref==3.9.1
+charset-normalizer==3.4.3
+Django==5.2.5
+pillow==11.3.0
+reportlab==4.4.4
+sqlparse==0.5.3
+whitenoise==6.9.0
