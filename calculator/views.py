@@ -45,13 +45,21 @@ def calculate_posts(length_for_spacing, width_for_spacing, spacing_length_limit,
         'positions': positions
     }
 
-def index(request):
+def index(request, lang='ru'):
     """
     Главная страница калькулятора с SVG-визуализацией.
     """
+    # Language selection based on lang argument
+    if lang == 'en':
+        template_name = 'calculator/index_en.html'
+    elif lang == 'no':
+        template_name = 'calculator/index_no.html'
+    else:
+        template_name = 'calculator/index.html'
+
     if request.method == 'POST' and request.POST.get('action') == 'reset':
         request.session.flush()
-        return render(request, 'calculator/index.html', {'result': None})
+        return render(request, template_name, {'result': None})
 
     result = request.session.get('result_data')
 
@@ -62,7 +70,7 @@ def index(request):
             if length <= 0 or width <= 0:
                 raise ValueError("Размеры должны быть больше 0")
         except (TypeError, ValueError):
-            return render(request, 'calculator/index.html', {'result': None, 'error': 'Введите корректные размеры'})
+            return render(request, template_name, {'result': None, 'error': 'Введите корректные размеры'})
 
         spacing_length_input = request.POST.get('spacing_length')
         spacing_width_input = request.POST.get('spacing_width')
@@ -338,15 +346,23 @@ def index(request):
 
         request.session['result_data'] = result
 
-    return render(request, 'calculator/index.html', {'result': result})
+    return render(request, template_name, {'result': result})
 
-def pricing(request):
+def pricing(request, lang='ru'):
     """
     Страница расчёта стоимости с графиком.
     """
+    # Language selection based on lang argument
+    if lang == 'en':
+        template_name = 'calculator/pricing_en.html'
+    elif lang == 'no':
+        template_name = 'calculator/pricing_no.html'
+    else:
+        template_name = 'calculator/pricing.html'
+
     if request.method == 'POST' and request.POST.get('action') == 'reset':
         request.session.flush()
-        return render(request, 'calculator/pricing.html', {'result': None, 'pricing_inputs': {}})
+        return render(request, template_name, {'result': None, 'pricing_inputs': {}})
 
     context = {}
     result_data = request.session.get('result_data')
@@ -364,7 +380,7 @@ def pricing(request):
     if request.method == 'POST' and request.POST.get('action') != 'reset':
         if not result_data:
             context['error'] = 'Сначала выполните расчёт материалов.'
-            return render(request, 'calculator/pricing.html', context)
+            return render(request, template_name, context)
 
         try:
             pricing_inputs = {
@@ -383,7 +399,7 @@ def pricing(request):
             }
         except (ValueError, TypeError):
             context['error'] = 'Введите корректные числовые значения для цен.'
-            return render(request, 'calculator/pricing.html', context)
+            return render(request, template_name, context)
 
         request.session['pricing_inputs'] = pricing_inputs
 
@@ -440,17 +456,40 @@ def pricing(request):
             elements = []
 
             # Header
-            elements.append(Paragraph("Quotation", styles['Title']))
-            elements.append(Paragraph("Boreal Maritim AS", styles['Normal']))
-            elements.append(Paragraph("Org.nr: 912 345 678", styles['Normal']))
-            elements.append(Paragraph("Hamneveien 14, 9180 Skjervøy, Norge", styles['Normal']))
-            elements.append(Paragraph("E-mail: post@borealmaritim.no", styles['Normal']))
-            elements.append(Paragraph("Phone: +47 123 45 678", styles['Normal']))
-            elements.append(Paragraph("<br/><br/>", styles['Normal']))
+            # Select language for PDF header
+            if lang == 'en':
+                elements.append(Paragraph("Quotation", styles['Title']))
+                elements.append(Paragraph("Boreal Maritim AS", styles['Normal']))
+                elements.append(Paragraph("Org.nr: 912 345 678", styles['Normal']))
+                elements.append(Paragraph("Hamneveien 14, 9180 Skjervøy, Norway", styles['Normal']))
+                elements.append(Paragraph("E-mail: post@borealmaritim.no", styles['Normal']))
+                elements.append(Paragraph("Phone: +47 123 45 678", styles['Normal']))
+                elements.append(Paragraph("<br/><br/>", styles['Normal']))
+            elif lang == 'no':
+                elements.append(Paragraph("Tilbud", styles['Title']))
+                elements.append(Paragraph("Boreal Maritim AS", styles['Normal']))
+                elements.append(Paragraph("Org.nr: 912 345 678", styles['Normal']))
+                elements.append(Paragraph("Hamneveien 14, 9180 Skjervøy, Norge", styles['Normal']))
+                elements.append(Paragraph("E-post: post@borealmaritim.no", styles['Normal']))
+                elements.append(Paragraph("Telefon: +47 123 45 678", styles['Normal']))
+                elements.append(Paragraph("<br/><br/>", styles['Normal']))
+            else:
+                elements.append(Paragraph("Смета", styles['Title']))
+                elements.append(Paragraph("Boreal Maritim AS", styles['Normal']))
+                elements.append(Paragraph("Орг.№: 912 345 678", styles['Normal']))
+                elements.append(Paragraph("Hamneveien 14, 9180 Skjervøy, Норвегия", styles['Normal']))
+                elements.append(Paragraph("E-mail: post@borealmaritim.no", styles['Normal']))
+                elements.append(Paragraph("Телефон: +47 123 45 678", styles['Normal']))
+                elements.append(Paragraph("<br/><br/>", styles['Normal']))
 
             # Materials table, if checkbox is selected
             if include_details and result_data:
-                data = [["Material", "Length (m)", "Quantity (pcs)", "Price (NOK)", "Total (NOK)"]]
+                if lang == 'en':
+                    data = [["Material", "Length (m)", "Quantity (pcs)", "Price (NOK)", "Total (NOK)"]]
+                elif lang == 'no':
+                    data = [["Materiale", "Lengde (m)", "Antall (stk)", "Pris (NOK)", "Sum (NOK)"]]
+                else:
+                    data = [["Материал", "Длина (м)", "Количество (шт)", "Цена (NOK)", "Сумма (NOK)"]]
                 data.append(["Beams 3×8", result_data.get('total_3x8_meterage', 0), result_data.get('total_3x8_board_count', 0), pricing_inputs.get('price_3x8', 0), pricing_result.get('cost_3x8', 0)])
                 data.append(["Material 3×6", result_data.get('total_3x6_meterage', 0), result_data.get('total_3x6_board_count', 0), pricing_inputs.get('price_3x6', 0), pricing_result.get('cost_3x6', 0)])
                 data.append([f"{result_data.get('beam_size')} guiding", result_data.get('total_guiding_meterage', 0), result_data.get('total_guiding_board_count', 0), pricing_inputs.get(f"price_{result_data.get('beam_size')}", 0), pricing_result.get(f"cost_{result_data.get('beam_size')}", 0)])
@@ -469,12 +508,40 @@ def pricing(request):
                 elements.append(table)
 
             # Totals
-            elements.append(Paragraph(f"<b>Total materials: {pricing_result.get('total_materials', 0)} NOK</b>", styles['Normal']))
-            elements.append(Paragraph(f"Work: {pricing_result.get('total_work', 0)} NOK", styles['Normal']))
-            elements.append(Paragraph(f"<b>Grand total: {pricing_result.get('total_price', 0)} NOK</b>", styles['Title']))
+            if lang == 'en':
+                elements.append(Paragraph(f"<b>Total materials: {pricing_result.get('total_materials', 0)} NOK</b>", styles['Normal']))
+                elements.append(Paragraph(f"Work: {pricing_result.get('total_work', 0)} NOK", styles['Normal']))
+                elements.append(Paragraph(f"<b>Grand total: {pricing_result.get('total_price', 0)} NOK</b>", styles['Title']))
+            elif lang == 'no':
+                elements.append(Paragraph(f"<b>Totale materialer: {pricing_result.get('total_materials', 0)} NOK</b>", styles['Normal']))
+                elements.append(Paragraph(f"Arbeid: {pricing_result.get('total_work', 0)} NOK", styles['Normal']))
+                elements.append(Paragraph(f"<b>Totalsum: {pricing_result.get('total_price', 0)} NOK</b>", styles['Title']))
+            else:
+                elements.append(Paragraph(f"<b>Всего материалы: {pricing_result.get('total_materials', 0)} NOK</b>", styles['Normal']))
+                elements.append(Paragraph(f"Работы: {pricing_result.get('total_work', 0)} NOK", styles['Normal']))
+                elements.append(Paragraph(f"<b>Итого: {pricing_result.get('total_price', 0)} NOK</b>", styles['Title']))
 
             doc.build(elements)
             return response
 
     context['result'] = pricing_result
-    return render(request, 'calculator/pricing.html', context)
+    return render(request, template_name, context)
+
+
+# --- Language-specific views ---
+
+def index_en(request):
+    """English version of index page"""
+    return index(request, lang='en')
+
+def pricing_en(request):
+    """English version of pricing page"""
+    return pricing(request, lang='en')
+
+def index_no(request):
+    """Norwegian version of index page"""
+    return index(request, lang='no')
+
+def pricing_no(request):
+    """Norwegian version of pricing page"""
+    return pricing(request, lang='no')

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pier Calculator</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body { padding: 20px; padding-bottom: 40px; }
+        .svg-container { border: 1px solid #ccc; margin-bottom: 20px; max-width: 400px; }
+        .svg-container svg { max-width: 100%; height: auto; }
+        .table th { background-color: #f8f9fa; }
+        .accordion-button { font-weight: bold; }
+        .error-message { display: none; color: red; }
+        text { font-size: 12px; dominant-baseline: middle; text-anchor: middle; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Language switcher -->
+        <div class="d-flex justify-content-end align-items-center mb-3">
+          <a href="/" class="btn btn-sm {% if request.path == '/' %}btn-primary{% else %}btn-outline-primary{% endif %} me-2">
+            🇷🇺 RU
+          </a>
+          <a href="/en/" class="btn btn-sm {% if '/en/' in request.path %}btn-primary{% else %}btn-outline-primary{% endif %} me-2">
+            🇬🇧 EN
+          </a>
+          <a href="/no/" class="btn btn-sm {% if '/no/' in request.path %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            🇳🇴 NO
+          </a>
+        </div>
+
+        <h1 class="text-center mb-4">Pier Calculator</h1>
+
+        <!-- Form -->
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-6">
+                <label class="form-label">Pier length (m):</label>
+                <input type="text" name="length" class="form-control" value="{{ result.original_length|default_if_none:'' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Pier width (m):</label>
+                <input type="text" name="width" class="form-control" value="{{ result.original_width|default_if_none:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Distance between posts along length (m, opt.):</label>
+                <input type="text" name="spacing_length" class="form-control" value="{{ result.input_spacing_length }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Distance between posts along width (m, opt.):</label>
+                <input type="text" name="spacing_width" class="form-control" value="{{ result.input_spacing_width }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Distance between joists (m, opt.):</label>
+                <input type="text" name="lag_spacing" class="form-control" value="{{ result.input_lag_spacing }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Select guiding beam:</label>
+                <select name="beam_size" class="form-select">
+                    <option value="6x6" {% if result.beam_size == '6x6' %}selected{% endif %}>6×6 inches</option>
+                    <option value="8x8" {% if result.beam_size == '8x8' %}selected{% endif %}>8×8 inches</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Front direction:</label>
+                <select name="front_direction" class="form-select">
+                    <option value="length" {% if result.front_direction == 'length' %}selected{% endif %}>Front along length</option>
+                    <option value="width" {% if result.front_direction == 'width' %}selected{% endif %}>Front along width</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Decking direction:</label>
+                <select name="deck_direction" class="form-select">
+                    <option value="length" {% if result.deck_direction == 'length' %}selected{% endif %}>3×8 along length</option>
+                    <option value="width" {% if result.deck_direction == 'width' %}selected{% endif %}>3×8 along width</option>
+                </select>
+            </div>
+            <div class="col-12 mt-3 d-grid gap-2 d-md-flex justify-content-md-start">
+                <button type="submit" name="action" value="calculate" class="btn btn-primary">
+                    <i class="fas fa-calculator"></i> Calculate
+                </button>
+                <button type="submit" name="action" value="reset" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+            </div>
+        </form>
+
+        {% if result %}
+        <div class="row mt-4">
+            <!-- Diagram -->
+            <div class="col-md-6">
+                <h3><i class="fas fa-drafting-compass"></i> Pier diagram</h3>
+                <div class="svg-container">
+                    <svg id="pierSchema" width="400" height="300"></svg>
+                </div>
+                <div id="schemaError" class="error-message">An error occurred while rendering the diagram. Please check your input.</div>
+
+<script>
+(function(){
+  // Wait for JSON from views.py: result.schema_data — JSON STRING
+  var raw = '{{ result.schema_data|safe }}';
+  try {
+    var data = raw ? JSON.parse(raw) : null;
+    if (!data || !data.dimensions) return;
+
+    // 1) Geometry: X = width, Y = length (as on the sample)
+    var L = +data.dimensions.length || 0;  // meters
+    var W = +data.dimensions.width  || 0;  // meters
+    if (L <= 0 || W <= 0) return;
+
+    var scale = 40; // px per meter — tweak if needed
+    var pad   = {l:60,t:60,r:140,b:100}; // paddings for labels
+
+    var width  = W * scale;   // X — WIDTH
+    var height = L * scale;   // Y — LENGTH
+
+    var X0 = pad.l, Y0 = pad.t, XR = X0 + width, YB = Y0 + height;
+    var CX = (X0 + XR)/2, CY = (Y0 + YB)/2;
+
+    // Prepare SVG
+    var svg = document.getElementById('pierSchema');
+    if (!svg) return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var vbW = pad.l + width + pad.r, vbH = pad.t + height + pad.b;
+    svg.setAttribute('viewBox', '0 0 ' + vbW + ' ' + vbH);
+    svg.innerHTML = '';
+
+    function E(n,a){ var el=document.createElementNS(NS,n); for(var k in a){el.setAttribute(k,a[k])} return el; }
+
+    // Body
+    svg.appendChild(E('rect',{x:X0,y:Y0,width:width,height:height,fill:'#e6f7fb',stroke:'#000','stroke-width':2,rx:4}));
+
+    // 3×8 rows + brown arrow
+    var n = Math.max(0, +data.num_lines_3x8 || 0);
+    if (n > 0) {
+      if (data.deck_direction === 'length') {
+        // along length — horizontal lines
+        for (var i=1;i<=n;i++){
+          var y = Y0 + i*(height/(n+1));
+          svg.appendChild(E('line',{x1:X0,y1:y,x2:XR,y2:y,stroke:'#8B4513','stroke-width':3,opacity:0.9}));
+        }
+        var ya = CY, xa1 = X0+20, xa2 = XR-20;
+        svg.appendChild(E('line',{x1:xa1,y1:ya,x2:xa2,y2:ya,stroke:'#8B4513','stroke-width':3}));
+        svg.appendChild(E('polygon',{points:(xa2-8)+','+(ya-5)+' '+xa2+','+ya+' '+(xa2-8)+','+(ya+5), fill:'#8B4513'}));
+        var t = E('text',{x:CX,y:ya+15,fill:'#8B4513','text-anchor':'middle'});
+        t.textContent='3×8 beams';
+        svg.appendChild(t);
+      } else {
+        // along width — vertical lines
+        for (var j=1;j<=n;j++){
+          var x = X0 + j*(width/(n+1));
+          svg.appendChild(E('line',{x1:x,y1:Y0,x2:x,y2:YB,stroke:'#8B4513','stroke-width':3,opacity:0.9}));
+        }
+        var xa = CX, ya1 = Y0+20, ya2 = YB-20;
+        svg.appendChild(E('line',{x1:xa,y1:ya1,x2:xa,y2:ya2,stroke:'#8B4513','stroke-width':3}));
+        svg.appendChild(E('polygon',{points:(xa-5)+','+(ya2-8)+' '+xa+','+ya2+' '+(xa+5)+','+(ya2-8), fill:'#8B4513'}));
+        var t2 = E('text',{x:xa+25,y:CY,fill:'#8B4513'});
+        t2.setAttribute('transform','rotate(90, '+(xa+25)+', '+CY+')');
+        t2.textContent='3×8 beams';
+        svg.appendChild(t2);
+      }
+    }
+
+    // Front axis: draw only one line at the front side, orange
+    if (data.front_direction === 'width') {
+      // front along width — bottom line
+      svg.appendChild(E('line',{x1:X0,y1:YB,x2:XR,y2:YB,stroke:'#fd7e14','stroke-width':4}));
+      var f = E('text',{x:CX,y:YB+18,fill:'#fd7e14','text-anchor':'middle'});
+      f.textContent='Front (axis: width)';
+      svg.appendChild(f);
+    } else {
+      // front along length — left line
+      svg.appendChild(E('line',{x1:X0,y1:Y0,x2:X0,y2:YB,stroke:'#fd7e14','stroke-width':4}));
+      var f2 = E('text',{x:X0-18,y:CY,fill:'#fd7e14'});
+      f2.setAttribute('transform','rotate(-90, '+(X0-18)+', '+CY+')');
+      f2.textContent='Front (axis: length)';
+      svg.appendChild(f2);
+    }
+
+    // Posts
+    if (Array.isArray(data.posts)) {
+      data.posts.forEach(function(p){
+        var px = X0 + (p.y||0) * scale + scale/2; // X = width
+        var py = Y0 + (p.x||0) * scale + scale/2; // Y = length
+        svg.appendChild(E('circle',{cx:px,cy:py,r:4,fill:'#dc3545',stroke:'#fff','stroke-width':1}));
+      });
+    }
+
+    // Dimension lines — Width on top, Length on the right
+    var wy = Y0 - 28;
+    svg.appendChild(E('line',{x1:X0,y1:wy,x2:XR,y2:wy,stroke:'#475569','stroke-width':2}));
+    svg.appendChild(E('polygon',{points:(XR-8)+','+(wy-5)+' '+XR+','+wy+' '+(XR-8)+','+(wy+5), fill:'#475569'}));
+    svg.appendChild(E('polygon',{points:(X0+8)+','+(wy-5)+' '+X0+','+wy+' '+(X0+8)+','+(wy+5), fill:'#475569'}));
+    var wt = E('text',{x:CX,y:wy-8,fill:'#475569','text-anchor':'middle'}); wt.textContent='Width: '+W.toFixed(2)+' m'; svg.appendChild(wt);
+
+    var lx = XR + 28;
+    svg.appendChild(E('line',{x1:lx,y1:Y0,x2:lx,y2:YB,stroke:'#475569','stroke-width':2}));
+    svg.appendChild(E('polygon',{points:(lx-5)+','+(YB-8)+' '+lx+','+YB+' '+(lx+5)+','+(YB-8), fill:'#475569'}));
+    svg.appendChild(E('polygon',{points:(lx-5)+','+(Y0+8)+' '+lx+','+Y0+' '+(lx+5)+','+(Y0+8), fill:'#475569'}));
+    var lt = E('text',{x:lx+12,y:CY,fill:'#475569'}); lt.setAttribute('transform','rotate(90, '+(lx+12)+', '+CY+')'); lt.textContent='Length: '+L.toFixed(2)+' m'; svg.appendChild(lt);
+
+  } catch(e) {
+    console.error('schema error', e);
+    var err = document.getElementById('schemaError'); if (err) err.style.display = 'block';
+  }
+})();
+</script>
+            </div>
+
+            <!-- Accordion with results -->
+            <div class="col-md-6">
+                <div class="accordion" id="resultsAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#posts">
+                                <i class="fas fa-columns"></i> Posts
+                            </button>
+                        </h2>
+                        <div id="posts" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Parameter</th><th>Value</th></tr>
+                                        <tr><td>Original length</td><td>{{ result.original_length|floatformat:2 }} m</td></tr>
+                                        <tr><td>Original width</td><td>{{ result.original_width|floatformat:2 }} m</td></tr>
+                                        <tr><td>Length with front</td><td>{{ result.adjusted_length|floatformat:2 }} m</td></tr>
+                                        <tr><td>Width with front</td><td>{{ result.adjusted_width|floatformat:2 }} m</td></tr>
+                                        <tr><td>Spacing along length</td><td>{{ result.spacing_length|floatformat:2 }} m</td></tr>
+                                        <tr><td>Posts along length</td><td>{{ result.count_length }}</td></tr>
+                                        <tr><td>Spacing along width</td><td>{{ result.spacing_width|floatformat:2 }} m</td></tr>
+                                        <tr><td>Posts along width</td><td>{{ result.count_width }}</td></tr>
+                                        <tr><td>Total posts</td><td>{{ result.total_posts }}</td></tr>
+                                        <tr><td>Pier area</td><td>{{ result.total_area|floatformat:2 }} m²</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#beams">
+                                <i class="fas fa-wood"></i> 3×8 Beams
+                            </button>
+                        </h2>
+                        <div id="beams" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Parameter</th><th>Value</th></tr>
+                                        <tr><td>Single line length</td><td>{{ result.line_length_3x8|floatformat:2 }} m</td></tr>
+                                        <tr><td>Number of lines</td><td>{{ result.num_lines_3x8 }}</td></tr>
+                                        <tr><td>Extra inserts</td><td>{{ result.inserts_3x8|floatformat:2 }} m</td></tr>
+                                        <tr><td>Total length</td><td>{{ result.total_3x8_meters|floatformat:2 }} m</td></tr>
+                                        <tr><td>Boards (6 m)</td><td>{{ result.total_3x8_boards }}</td></tr>
+                                        <tr><td>Bolts</td><td>{{ result.bolts_beam_count }}</td></tr>
+                                        <tr><td>Bolt meterage</td><td>{{ result.bolts_beam_meterage|floatformat:2 }} m</td></tr>
+                                        <tr><td>Nuts</td><td>{{ result.nuts_beam_count }}</td></tr>
+                                        <tr><td>Washers</td><td>{{ result.washers_beam_count }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lags">
+                                <i class="fas fa-wood"></i> 3×6 Joists
+                            </button>
+                        </h2>
+                        <div id="lags" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Parameter</th><th>Value</th></tr>
+                                        <tr><td>Joist rows</td><td>{{ result.num_lag_rows }}</td></tr>
+                                        <tr><td>Single joist length</td><td>{{ result.lag_row_length|floatformat:2 }} m</td></tr>
+                                        <tr><td>Total joist length</td><td>{{ result.total_lag_meterage|floatformat:2 }} m</td></tr>
+                                        <tr><td>Boards (6 m)</td><td>{{ result.lag_boards_needed }}</td></tr>
+                                        <tr><td>30 mm screws</td><td>{{ result.lag_screws }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#deck">
+                                <i class="fas fa-wood"></i> 3×6 Decking
+                            </button>
+                        </h2>
+                        <div id="deck" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Parameter</th><th>Value</th></tr>
+                                        <tr><td>Board rows</td><td>{{ result.board_rows }}</td></tr>
+                                        <tr><td>Boards per row</td><td>{{ result.boards_per_row }}</td></tr>
+                                        <tr><td>Total board length</td><td>{{ result.total_deck_meterage|floatformat:2 }} m</td></tr>
+                                        <tr><td>Boards (6 m)</td><td>{{ result.deck_boards_needed }}</td></tr>
+                                        <tr><td>30 mm screws</td><td>{{ result.deck_screws }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#diagonals">
+                                <i class="fas fa-wood"></i> 3×6 Diagonal Braces
+                            </button>
+                        </h2>
+                        <div id="diagonals" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Parameter</th><th>Value</th></tr>
+                                        <tr><td>Diagonals along length</td><td>{{ result.cross_count_length }}</td></tr>
+                                        <tr><td>Diagonals along width</td><td>{{ result.cross_count_width }}</td></tr>
+                                        <tr><td>Total diagonals</td><td>{{ result.cross_count_total }}</td></tr>
+                                        <tr><td>Total brace length</td><td>{{ result.total_cross_meters|floatformat:2 }} m</td></tr>
+                                        <tr><td>Boards (6 m)</td><td>{{ result.cross_boards_needed }}</td></tr>
+                                        <tr><td>Bolts</td><td>{{ result.total_bolts_cross }}</td></tr>
+                                        <tr><td>Nuts</td><td>{{ result.nuts_cross_count }}</td></tr>
+                                        <tr><td>Washers</td><td>{{ result.washers_cross_count }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#front">
+                                <i class="fas fa-wood"></i> Front
+                            </button>
+                        </h2>
+                        <div id="front" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tr><th>Parameter</th><th>Value</th></tr>
+                                        <tr><td>3×6 boards (vertical)</td><td>{{ result.front_boards_count }}</td></tr>
+                                        <tr><td>Total 3×6 length</td><td>{{ result.front_boards_meters|floatformat:2 }} m</td></tr>
+                                        <tr><td>Blocks</td><td>{{ result.front_cubes_count }}</td></tr>
+                                        <tr><td>40 mm screws (boards)</td><td>{{ result.front_board_screws }}</td></tr>
+                                        <tr><td>30 mm screws (blocks)</td><td>{{ result.cube_screws }}</td></tr>
+                                        <tr><td>Guiding beam {{ result.beam_size }}</td><td>{{ result.front_beam_meterage|floatformat:2 }} m</td></tr>
+                                        <tr><td>Boards (6 m)</td><td>{{ result.front_beam_boards }}</td></tr>
+                                        <tr><td>Connections (1.2 m)</td><td>{{ result.front_connections }}</td></tr>
+                                        <tr><td>Bolts</td><td>{{ result.front_beam_bolts }}</td></tr>
+                                        <tr><td>Nuts</td><td>{{ result.front_beam_nuts }}</td></tr>
+                                        <tr><td>Washers</td><td>{{ result.front_beam_washers }}</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#summary" aria-expanded="true">
+                                <i class="fas fa-list"></i> Materials Summary
+                            </button>
+                        </h2>
+                        <div id="summary" class="accordion-collapse collapse show">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm">
+                                        <thead><tr><th>Material</th><th>Meterage (m)</th><th>Quantity (pcs)</th></tr></thead>
+                                        <tbody>
+                                            <tr><td>Posts</td><td>-</td><td>{{ result.total_posts_count }}</td></tr>
+                                            <tr><td>3×8 beams</td><td>{{ result.total_3x8_meterage|floatformat:2 }}</td><td>{{ result.total_3x8_board_count }}</td></tr>
+                                            <tr><td>3×6 material</td><td>{{ result.total_3x6_meterage|floatformat:2 }}</td><td>{{ result.total_3x6_board_count }}</td></tr>
+                                            <tr><td>{{ result.beam_size }} guiding (front)</td><td>{{ result.total_guiding_meterage|floatformat:2 }}</td><td>{{ result.total_guiding_board_count }}</td></tr>
+                                            <tr><td>30 mm screws</td><td>-</td><td>{{ result.total_screws_30 }}</td></tr>
+                                            <tr><td>40 mm screws</td><td>-</td><td>{{ result.total_screws_40 }}</td></tr>
+                                            <tr><td>Bolts</td><td>{{ result.total_bolt_meterage_effective|floatformat:2 }}</td><td>{{ result.total_bolt_count }}</td></tr>
+                                            <tr><td>Nuts</td><td>-</td><td>{{ result.total_nuts_count }}</td></tr>
+                                            <tr><td>Washers</td><td>-</td><td>{{ result.total_washers_count }}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <a href="{% url 'pricing_en' %}" class="btn btn-success"><i class="fas fa-dollar-sign"></i> Go to price calculation</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- /col -->
+        </div> <!-- /row -->
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-danger mt-3">{{ error }}</div>
+        {% endif %}
+    </div> <!-- /container -->
+</body>
+</html>
